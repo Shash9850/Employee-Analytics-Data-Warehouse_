@@ -348,8 +348,14 @@ CREATE PROCEDURE sp_assign_employee_to_project (
     IN p_end_date DATE
 )
 BEGIN
+    DECLARE v_assignment_id INT;
+
+    SELECT COALESCE(MAX(assignment_id), 0) + 1
+    INTO v_assignment_id
+    FROM employee_projects;
 
     INSERT INTO employee_projects (
+        assignment_id,
         employee_id,
         project_id,
         allocation_percent,
@@ -357,6 +363,7 @@ BEGIN
         end_date
     )
     VALUES (
+        v_assignment_id,
         p_employee_id,
         p_project_id,
         p_allocation_percent,
