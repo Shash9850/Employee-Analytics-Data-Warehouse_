@@ -1,4 +1,5 @@
 import os
+import tempfile
 
 import mysql.connector
 from mysql.connector import Error
@@ -42,7 +43,21 @@ def get_db_config():
     ssl_ca = get_secret("DB_SSL_CA")
 
     if ssl_ca:
-        config["ssl_ca"] = ssl_ca
+        # Streamlit Cloud stores the certificate as text.
+        # mysql-connector expects ssl_ca to point to a certificate file.
+        if "BEGIN CERTIFICATE" in ssl_ca:
+            certificate_file = tempfile.NamedTemporaryFile(
+                mode="w",
+                suffix=".pem",
+                delete=False,
+            )
+            certificate_file.write(ssl_ca)
+            certificate_file.close()
+
+            config["ssl_ca"] = certificate_file.name
+        else:
+            # Local environments can provide a normal .pem file path.
+            config["ssl_ca"] = ssl_ca
 
     return config
 
