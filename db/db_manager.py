@@ -1,9 +1,50 @@
 import os
+
 import mysql.connector
 from mysql.connector import Error
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def get_secret(key, default=None):
+    """Get a database setting from environment variables or Streamlit secrets."""
+    value = os.getenv(key)
+
+    if value is not None:
+        return value
+
+    try:
+        import streamlit as st
+
+        if key in st.secrets:
+            return st.secrets[key]
+    except Exception:
+        pass
+
+    return default
+
+
+def get_db_config():
+    """Build the MySQL connection configuration."""
+    config = {
+        "host": get_secret("DB_HOST"),
+        "user": get_secret("DB_USER"),
+        "password": get_secret("DB_PASSWORD"),
+        "database": get_secret("DB_NAME"),
+    }
+
+    port = get_secret("DB_PORT")
+
+    if port:
+        config["port"] = int(port)
+
+    ssl_ca = get_secret("DB_SSL_CA")
+
+    if ssl_ca:
+        config["ssl_ca"] = ssl_ca
+
+    return config
 
 
 class DatabaseConnection:
@@ -23,12 +64,9 @@ class DatabaseConnection:
             return self._connection
 
         try:
-            self._connection = mysql.connector.connect(
-                host=os.getenv("DB_HOST"),
-                user=os.getenv("DB_USER"),
-                password=os.getenv("DB_PASSWORD"),
-                database=os.getenv("DB_NAME")
-            )
+            config = get_db_config()
+
+            self._connection = mysql.connector.connect(**config)
 
             return self._connection
 
