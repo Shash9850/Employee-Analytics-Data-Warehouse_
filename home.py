@@ -258,7 +258,7 @@ with col1:
         <div class="metric-icon">👥</div>
         <div class="metric-label">Total Employees</div>
         <div class="metric-value">{employee_count:,}</div>
-        <div class="metric-change">↑ 8.4% this year</div>
+        <div class="metric-change">Live Database Count</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -268,7 +268,7 @@ with col2:
         <div class="metric-icon">⭐</div>
         <div class="metric-label">Performance Reviews</div>
         <div class="metric-value">{review_count:,}</div>
-        <div class="metric-change">↑ 12.1% this year</div>
+        <div class="metric-change">Live Database Count</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -278,7 +278,7 @@ with col3:
         <div class="metric-icon">🚀</div>
         <div class="metric-label">Active Projects</div>
         <div class="metric-value">{project_count:,}</div>
-        <div class="metric-change">↑ 5.7% this quarter</div>
+        <div class="metric-change">Live Database Count</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -288,7 +288,7 @@ with col4:
         <div class="metric-icon">📊</div>
         <div class="metric-label">Data Records</div>
         <div class="metric-value">{record_count:,}</div>
-        <div class="metric-change">✓ Warehouse healthy</div>
+        <div class="metric-change">Live Database Count</div>
     </div>
     """, unsafe_allow_html=True)
 
