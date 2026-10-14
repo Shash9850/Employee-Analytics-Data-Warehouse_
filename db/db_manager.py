@@ -150,3 +150,33 @@ class DatabaseConnection:
         finally:
             if cursor is not None:
                 cursor.close()
+
+
+
+
+        
+    def fetch_checked(self, query, params=None):
+        """Fetch rows and raise an error if the database query fails."""
+        conn = self.connect()
+
+        if conn is None:
+            raise RuntimeError("Database connection is unavailable.")
+
+        cursor = None
+
+        try:
+            cursor = conn.cursor(dictionary=True)
+
+            if params is not None:
+                cursor.execute(query, params)
+            else:
+                cursor.execute(query)
+
+            return cursor.fetchall()
+
+        except Error as exc:
+            raise RuntimeError("Database query failed.") from exc
+
+        finally:
+            if cursor is not None:
+                cursor.close()
