@@ -43,8 +43,6 @@ def get_db_config():
     ssl_ca = get_secret("DB_SSL_CA")
 
     if ssl_ca:
-        # Streamlit Cloud stores the certificate as text.
-        # mysql-connector expects ssl_ca to point to a certificate file.
         if "BEGIN CERTIFICATE" in ssl_ca:
             certificate_file = tempfile.NamedTemporaryFile(
                 mode="w",
@@ -53,10 +51,8 @@ def get_db_config():
             )
             certificate_file.write(ssl_ca)
             certificate_file.close()
-
             config["ssl_ca"] = certificate_file.name
         else:
-            # Local environments can provide a normal .pem file path.
             config["ssl_ca"] = ssl_ca
 
     return config
@@ -73,21 +69,29 @@ class DatabaseConnection:
             cls._instance = super(DatabaseConnection, cls).__new__(cls)
         return cls._instance
 
+    
     def connect(self):
         """Create and return a MySQL connection."""
-        if self._connection is not None and self._connection.is_connected():
-            return self._connection
+        if self._connection is not None:
+            try:
+                if self._connection.is_connected():
+                    return self._connection
+            except Error:
+                self._connection = None
 
         try:
-            config = get_db_config()
-
-            self._connection = mysql.connector.connect(**config)
-
+            self._connection = mysql.connector.connect(**get_db_config())
             return self._connection
-
-        except Error as e:
-            print(f"Database connection error: {e}")
+        except Error as exc:
+            print(
+                "Database connection failed: "
+                f"type={type(exc).__name__}, "
+                f"errno={getattr(exc, 'errno', None)}, "
+                f"sqlstate={getattr(exc, 'sqlstate', None)}"
+            )
+            self._connection = None
             return None
+
 
     def close(self):
         """Close the database connection."""
@@ -96,7 +100,7 @@ class DatabaseConnection:
             self._connection = None
 
     def execute(self, query, params=None):
-        """Execute INSERT, UPDATE, DELETE or other SQL statements."""
+        """Execute a statement and commit on success."""
         conn = self.connect()
 
         if conn is None:
@@ -151,10 +155,6 @@ class DatabaseConnection:
             if cursor is not None:
                 cursor.close()
 
-
-
-
-        
     def fetch_checked(self, query, params=None):
         """Fetch rows and raise an error if the database query fails."""
         conn = self.connect()
@@ -174,8 +174,16 @@ class DatabaseConnection:
 
             return cursor.fetchall()
 
+        
         except Error as exc:
-            raise RuntimeError("Database query failed.") from exc
+            print(
+                "Database query failed: "
+                f"type={type(exc).__name__}, "
+                f"errno={getattr(exc, 'errno', None)}, "
+                f"sqlstate={getattr(exc, 'sqlstate', None)}"
+            )
+            raise RuntimeError("Database query failed.") from None
+
 
         finally:
             if cursor is not None:
