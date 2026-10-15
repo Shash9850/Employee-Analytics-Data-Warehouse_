@@ -177,6 +177,22 @@ class DatabaseConnection:
         try:
             cursor = conn.cursor(dictionary=True)
 
+
+            if "FROM app_users" in query:
+                cursor.execute("SELECT DATABASE() AS db_name")
+                print(
+                    "LOGIN_DIAG: database selected = "
+                    + str(cursor.fetchone()["db_name"]),
+                    flush=True,
+                )
+                cursor.execute("SHOW TABLES LIKE 'app_users'")
+                print(
+                    "LOGIN_DIAG: app_users visible = "
+                    + str(bool(cursor.fetchone())),
+                    flush=True,
+                )
+                
+
             if params is not None:
                 cursor.execute(query, params)
             else:
