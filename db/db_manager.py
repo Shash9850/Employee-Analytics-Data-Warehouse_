@@ -161,8 +161,9 @@ class DatabaseConnection:
             if cursor is not None:
                 cursor.close()
 
+    
     def fetch_checked(self, query, params=None):
-        """Fetch rows and raise an error if the database query fails."""
+        """Fetch rows and log safe database diagnostics on failure."""
         conn = self.connect()
 
         if conn is None:
@@ -177,6 +178,23 @@ class DatabaseConnection:
         try:
             cursor = conn.cursor(dictionary=True)
 
+            # Diagnose the schema used by the login query.
+            if "FROM app_users" in query:
+                cursor.execute("SELECT DATABASE() AS db_name")
+                result = cursor.fetchone()
+                print(
+                    "LOGIN_DIAG: selected database = "
+                    + str(result["db_name"] if result else None),
+                    flush=True,
+                )
+
+                cursor.execute("SHOW TABLES LIKE 'app_users'")
+                print(
+                    "LOGIN_DIAG: app_users visible = "
+                    + str(bool(cursor.fetchone())),
+                    flush=True,
+                )
+
             if params is not None:
                 cursor.execute(query, params)
             else:
@@ -184,16 +202,17 @@ class DatabaseConnection:
 
             return cursor.fetchall()
 
-        
         except Error as exc:
+            # Log only safe error metadata, not credentials or SQL parameters.
             print(
                 "Database query failed: "
                 f"type={type(exc).__name__}, "
                 f"errno={getattr(exc, 'errno', None)}, "
-                f"sqlstate={getattr(exc, 'sqlstate', None)}"
+                f"sqlstate={getattr(exc, 'sqlstate', None)}, "
+                f"message={str(exc)[:300]}",
+                flush=True,
             )
             raise RuntimeError("Database query failed.") from None
-
 
         finally:
             if cursor is not None:
