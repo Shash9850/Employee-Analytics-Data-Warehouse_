@@ -53,39 +53,28 @@ def render_login():
                 use_container_width=True,
             )
 
+        
         if submitted:
-            print("LOGIN_DIAG: form submitted", flush=True)
-
             if not username.strip() or not password:
                 st.error("Enter both your username and password.")
-                print("LOGIN_DIAG: missing credentials", flush=True)
                 return
-
-            print("LOGIN_DIAG: calling authenticate", flush=True)
 
             try:
                 user = authenticate(username, password)
-
-                print(
-                    f"LOGIN_DIAG: user returned = {user is not None}",
-                    flush=True,
-                )
-
-                if user is not None:
-                    print(
-                        f"LOGIN_DIAG: authenticated role = {user.get('role')}",
-                        flush=True,
-                    )
-            except RuntimeError as exc:
-                print(
-                    f"LOGIN_DIAG: authentication error type={type(exc).__name__}",
-                    flush=True,
-                )
+            except RuntimeError:
                 st.error(
                     "Login is temporarily unavailable. "
                     "Please check the database connection and try again."
                 )
                 return
+
+            if user is None:
+                st.error("Invalid username or password.")
+                return
+
+            st.session_state["auth_user"] = user
+            st.rerun()
+
 
 
 def render_user_sidebar():
