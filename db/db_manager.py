@@ -70,8 +70,9 @@ class DatabaseConnection:
         return cls._instance
 
     
+    
     def connect(self):
-        """Create and return a MySQL connection."""
+        """Create and return a MySQL connection with safe diagnostics."""
         if self._connection is not None:
             try:
                 if self._connection.is_connected():
@@ -80,17 +81,22 @@ class DatabaseConnection:
                 self._connection = None
 
         try:
-            self._connection = mysql.connector.connect(**get_db_config())
+            config = get_db_config()
+            self._connection = mysql.connector.connect(**config)
+            print("Database connection established successfully.")
             return self._connection
-        except Error as exc:
+
+        except Exception as exc:
             print(
                 "Database connection failed: "
                 f"type={type(exc).__name__}, "
                 f"errno={getattr(exc, 'errno', None)}, "
-                f"sqlstate={getattr(exc, 'sqlstate', None)}"
+                f"sqlstate={getattr(exc, 'sqlstate', None)}",
+                flush=True,
             )
             self._connection = None
             return None
+
 
 
     def close(self):
@@ -160,6 +166,10 @@ class DatabaseConnection:
         conn = self.connect()
 
         if conn is None:
+            print(
+                "Database query aborted: no database connection available.",
+                flush=True,
+            )
             raise RuntimeError("Database connection is unavailable.")
 
         cursor = None
