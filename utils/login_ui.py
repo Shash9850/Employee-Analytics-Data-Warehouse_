@@ -65,7 +65,17 @@ def render_login():
 
             try:
                 user = authenticate(username, password)
-                print("LOGIN_DIAG: authenticate returned", flush=True)
+
+                print(
+                    f"LOGIN_DIAG: user returned = {user is not None}",
+                    flush=True,
+                )
+
+                if user is not None:
+                    print(
+                        f"LOGIN_DIAG: authenticated role = {user.get('role')}",
+                        flush=True,
+                    )
             except RuntimeError as exc:
                 print(
                     f"LOGIN_DIAG: authentication error type={type(exc).__name__}",
@@ -80,6 +90,7 @@ def render_login():
 
 def render_user_sidebar():
     """Show the logged-in user and a logout control in the sidebar."""
+    print("LOGIN_DIAG: setting session state", flush=True)
     user = st.session_state.get("auth_user")
 
     if not user:
