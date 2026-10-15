@@ -4,6 +4,7 @@ import plotly.express as px
 
 from db.db_manager import DatabaseConnection
 from managers.analytics_manager import AnalyticsManager
+from utils.auth import require_permission
 
 
 
@@ -16,6 +17,8 @@ st.set_page_config(
     layout="wide"
 )
 
+
+require_permission("view_department_analytics")
 
 
 # CUSTOM CSS
@@ -166,62 +169,47 @@ st.markdown(
 # KPI CARDS
 
 
-employees = db.fetch(
-    """
-    SELECT COUNT(*) AS total
-    FROM employees
-    """
-)
 
-reviews = db.fetch(
-    """
-    SELECT COUNT(*) AS total
-    FROM performance_reviews
-    """
-)
+# KPI CARDS — live database metrics
 
-projects = db.fetch(
-    """
-    SELECT COUNT(*) AS total
-    FROM projects
-    """
-)
+try:
+    employees = db.fetch_checked("""
+        SELECT COUNT(*) AS total
+        FROM employees
+    """)
 
-performance = db.fetch(
-    """
-    SELECT
-        ROUND(
-            AVG(performance_score),
-            2
-        ) AS average_score
-    FROM fact_performance_reviews
-    """
-)
+    reviews = db.fetch_checked("""
+        SELECT COUNT(*) AS total
+        FROM performance_reviews
+    """)
 
+    projects = db.fetch_checked("""
+        SELECT COUNT(*) AS total
+        FROM projects
+    """)
 
-employee_count = (
-    employees[0]["total"]
-    if employees
-    else 0
-)
+    performance = db.fetch_checked("""
+        SELECT ROUND(AVG(performance_score), 2) AS average_score
+        FROM fact_performance_reviews
+    """)
 
-review_count = (
-    reviews[0]["total"]
-    if reviews
-    else 0
-)
+except RuntimeError:
+    st.error(
+        "Unable to load dashboard KPIs. "
+        "Check the database connection and required tables."
+    )
+    st.stop()
 
-project_count = (
-    projects[0]["total"]
-    if projects
-    else 0
-)
+employee_count = employees[0]["total"] if employees else 0
+review_count = reviews[0]["total"] if reviews else 0
+project_count = projects[0]["total"] if projects else 0
 
 average_score = (
     performance[0]["average_score"]
-    if performance
-    else 0
+    if performance and performance[0]["average_score"] is not None
+    else "N/A"
 )
+
 
 
 col1, col2, col3, col4 = st.columns(
