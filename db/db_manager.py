@@ -71,19 +71,32 @@ class DatabaseConnection:
 
     
     
+    
     def connect(self):
-        """Create and return a MySQL connection with safe diagnostics."""
+        """Create or reuse a live MySQL connection."""
         if self._connection is not None:
             try:
                 if self._connection.is_connected():
+                    # Verify the connection is responsive, not just marked open.
+                    self._connection.ping(reconnect=True, attempts=2, delay=1)
                     return self._connection
             except Error:
-                self._connection = None
+                try:
+                    self._connection.close()
+                except Error:
+                    pass
+                finally:
+                    self._connection = None
 
         try:
             config = get_db_config()
-            self._connection = mysql.connector.connect(**config)
-            print("Database connection established successfully.")
+            self._connection = mysql.connector.connect(
+                **config,
+                connection_timeout=15,
+                autocommit=False,
+                use_pure=True,
+            )
+            print("Database connection established successfully.", flush=True)
             return self._connection
 
         except Exception as exc:
@@ -99,11 +112,24 @@ class DatabaseConnection:
 
 
 
+
+    
     def close(self):
-        """Close the database connection."""
-        if self._connection is not None and self._connection.is_connected():
-            self._connection.close()
-            self._connection = None
+        """Close the shared database connection safely."""
+        conn = self._connection
+        self._connection = None
+
+        if conn is not None:
+            try:
+                conn.close()
+            except Error as exc:
+                print(
+                    "Database close warning: "
+                    f"type={type(exc).__name__}, "
+                    f"errno={getattr(exc, 'errno', None)}",
+                    flush=True,
+                )
+
 
     def execute(self, query, params=None):
         """Execute a statement and commit on success."""
