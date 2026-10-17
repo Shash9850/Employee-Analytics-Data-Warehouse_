@@ -2,7 +2,7 @@
 """Employee onboarding page with input validation and duplicate checks."""
 
 import streamlit as st
-
+from utils.auth import require_permission
 from managers.employee_manager import EmployeeManager
 from models.employee import Employee
 from utils.validation import (
@@ -19,6 +19,7 @@ st.set_page_config(
     layout="wide",
 )
 
+require_permission("manage_employees")
 
 @st.cache_resource
 def get_manager():

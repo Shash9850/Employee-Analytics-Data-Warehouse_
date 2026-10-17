@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+from utils.auth import has_permission, require_permission
 
 from db.db_manager import DatabaseConnection
 
@@ -10,6 +11,7 @@ st.set_page_config(
     layout="wide"
 )
 
+require_permission("view_reviews")
 
 @st.cache_resource
 def get_db():
@@ -57,123 +59,109 @@ employee_options = {
 
 # REVIEW FORM
 
-st.subheader("➕ Add Performance Review")
+if has_permission("create_reviews"):
+    st.subheader("➕ Add Performance Review")
 
 
-with st.form("performance_review_form"):
+    with st.form("performance_review_form"):
 
-    employee_name = st.selectbox(
-        "Employee",
-        list(employee_options.keys())
-    )
-
-    review_date = st.date_input(
-        "Review Date"
-    )
-
-  
-    review_period = st.selectbox(
-    "Review Period",
-    [
-        "Quarterly",
-        "Mid-Year",
-        "Annual"
-    ]
-
-    )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
-
-        performance_score = st.number_input(
-            "Performance Score",
-            min_value=0.0,
-            max_value=100.0,
-            value=75.0,
-            step=0.5
+        employee_name = st.selectbox(
+            "Employee",
+            list(employee_options.keys())
         )
 
-        performance_rating = st.slider(
-            "Performance Rating",
-            min_value=1,
-            max_value=5,
-            value=3
-        )
-
-    with col2:
-
-        manager_rating = st.slider(
-            "Manager Rating",
-            min_value=1,
-            max_value=5,
-            value=3
-        )
-
-        employee_rating = st.slider(
-            "Employee Rating",
-            min_value=1,
-            max_value=5,
-            value=3
-        )
-
-    comments = st.text_area(
-        "Comments",
-        placeholder="Enter review comments..."
-    )
-
-    submitted = st.form_submit_button(
-        "Submit Review"
-    )
-
-
-# INSERT REVIEW
-
-if submitted:
-
-    employee_id = employee_options[employee_name]
-
-    query = """
-        CALL sp_add_performance_review(
-            %s, %s, %s, %s,
-            %s, %s, %s, %s
-        )
-    """
-
-    params = (
-        employee_id,
-        review_date,
-        review_period,
-        performance_score,
-        performance_rating,
-        manager_rating,
-        employee_rating,
-        comments
-    )
-
-    result = db.execute(
-        query,
-        params
-    )
-
-    if result:
-
-        st.success(
-            f"Performance review added successfully "
-            f"for employee {employee_id}."
-        )
-
-        st.cache_resource.clear()
-
-    else:
-
-        st.error(
-            "Unable to add performance review."
+        review_date = st.date_input(
+            "Review Date"
         )
 
 
-st.divider()
+        review_period = st.selectbox(
+        "Review Period",
+        [
+            "Quarterly",
+            "Mid-Year",
+            "Annual"
+        ]
 
+        )
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+
+            performance_score = st.number_input(
+                "Performance Score",
+                min_value=0.0,
+                max_value=100.0,
+                value=75.0,
+                step=0.5
+            )
+
+            performance_rating = st.slider(
+                "Performance Rating",
+                min_value=1,
+                max_value=5,
+                value=3
+            )
+
+        with col2:
+
+            manager_rating = st.slider(
+                "Manager Rating",
+                min_value=1,
+                max_value=5,
+                value=3
+            )
+
+            employee_rating = st.slider(
+                "Employee Rating",
+                min_value=1,
+                max_value=5,
+                value=3
+            )
+
+        comments = st.text_area(
+            "Comments",
+            placeholder="Enter review comments..."
+        )
+
+        submitted = st.form_submit_button(
+            "Submit Review"
+        )
+
+
+    # INSERT REVIEW
+    if submitted:
+        employee_id = employee_options[employee_name]
+
+        query = """
+            CALL sp_add_performance_review(
+                %s, %s, %s, %s,
+                %s, %s, %s, %s
+            )
+        """
+
+        params = (
+            employee_id,
+            review_date,
+            review_period,
+            performance_score,
+            performance_rating,
+            manager_rating,
+            employee_rating,
+            comments
+        )
+
+        result = db.execute(query, params)
+
+        if result:
+            st.success(
+                f"Performance review added successfully "
+                f"for employee {employee_id}."
+            )
+            st.cache_resource.clear()
+        else:
+            st.error("Unable to add performance review.")
 
 # RECENT REVIEWS
 

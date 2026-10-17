@@ -16,10 +16,28 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+
 # Authenticate before showing application pages.
 if not st.session_state.get("auth_user"):
+    # Hide Streamlit's sidebar and its expand control before login.
+    st.markdown(
+        """
+        <style>
+            section[data-testid="stSidebar"] {
+                display: none !important;
+            }
+
+            button[data-testid="stSidebarCollapsedControl"] {
+                display: none !important;
+            }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
     render_login()
     st.stop()
+
 
 require_login()
 render_user_sidebar()
