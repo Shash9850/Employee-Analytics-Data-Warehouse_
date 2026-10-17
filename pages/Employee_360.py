@@ -4,7 +4,7 @@ import plotly.express as px
 
 from managers.analytics_manager import AnalyticsManager
 
-
+from utils.auth import require_permission
 # PAGE CONFIGURATION
 
 st.set_page_config(
@@ -13,7 +13,7 @@ st.set_page_config(
     layout="wide"
 )
 
-
+require_permission("view_employees")
 # ANALYTICS MANAGER
 
 manager = AnalyticsManager()
@@ -51,6 +51,27 @@ if not employee_data:
     st.stop()
 
 employee = employee_data[0]
+
+# Restrict Department Managers to their assigned department.
+auth_user = st.session_state.get("auth_user", {})
+
+if auth_user.get("role") == "Department Manager":
+    assigned_department = auth_user.get("department_id")
+
+    if assigned_department is None:
+        st.error("Your account has no assigned department.")
+        st.stop()
+
+    try:
+        department_scope = int(assigned_department)
+        employee_department = int(employee["department_id"])
+    except (TypeError, ValueError):
+        st.error("Unable to verify your department access.")
+        st.stop()
+
+    if employee_department != department_scope:
+        st.error("You do not have permission to view this employee.")
+        st.stop()
 
 
 st.header(

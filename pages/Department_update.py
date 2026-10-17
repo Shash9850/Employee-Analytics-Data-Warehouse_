@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-
+from utils.auth import require_permission
 from managers.employee_manager import EmployeeManager
 
 
@@ -9,7 +9,7 @@ st.set_page_config(
     page_icon="🔄",
     layout="wide"
 )
-
+require_permission("manage_employees")
 
 @st.cache_resource
 def get_manager():
