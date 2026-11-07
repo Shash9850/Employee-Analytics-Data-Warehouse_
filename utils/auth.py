@@ -144,8 +144,13 @@ def create_auth_tables():
         raise RuntimeError("Could not create the authentication table.")
 
 
+
+
 def authenticate(username, password):
     """Return a user record for valid active credentials, otherwise None."""
+
+    print("AUTH_DIAG: 1 - authentication started", flush=True)
+
     username = username.strip()
 
     if not username or not password:
@@ -154,6 +159,8 @@ def authenticate(username, password):
     db = DatabaseConnection()
 
     try:
+        print("AUTH_DIAG: 2 - before database query", flush=True)
+
         users = db.fetch_checked(
             """
             SELECT
@@ -168,19 +175,37 @@ def authenticate(username, password):
             """,
             (username,),
         )
+
+        print("AUTH_DIAG: 3 - database query completed", flush=True)
+
     except RuntimeError:
-        raise RuntimeError("Unable to verify login credentials.") from None
+        print("AUTH_DIAG: database query failed", flush=True)
+        raise RuntimeError(
+            "Unable to verify login credentials."
+        ) from None
 
     if not users:
+        print("AUTH_DIAG: 4 - no matching user", flush=True)
         return None
 
     user = users[0]
 
-    if not verify_password(password, user["password_hash"]):
+    print("AUTH_DIAG: 5 - before password verification", flush=True)
+
+    password_valid = verify_password(
+        password,
+        user["password_hash"]
+    )
+
+    print("AUTH_DIAG: 6 - password verification completed", flush=True)
+
+    if not password_valid:
         return None
 
     if user["role"] not in ROLES:
         return None
+
+    print("AUTH_DIAG: 7 - authentication successful", flush=True)
 
     return {
         "user_id": user["user_id"],
@@ -188,6 +213,7 @@ def authenticate(username, password):
         "role": user["role"],
         "department_id": user["department_id"],
     }
+
 
 
 def has_permission(permission):

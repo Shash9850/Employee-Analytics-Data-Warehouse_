@@ -59,6 +59,8 @@ def render_login():
                 st.error("Enter both your username and password.")
                 return
 
+            print("LOGIN_DIAG: before authenticate", flush=True)
+
             try:
                 user = authenticate(username, password)
             except RuntimeError:
@@ -68,11 +70,18 @@ def render_login():
                 )
                 return
 
+            print("LOGIN_DIAG: after authenticate", flush=True)
+            
             if user is None:
                 st.error("Invalid username or password.")
                 return
 
+            print("LOGIN_DIAG: before session update", flush=True)
+
             st.session_state["auth_user"] = user
+
+            print("LOGIN_DIAG: before st.rerun", flush=True)
+
             st.rerun()
 
 
